@@ -1,0 +1,498 @@
+1 0 1500 1500 1
+2 1 2500 1500 1
+3 1 2000 2500 1
+4 1 1500 1500 1
+
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<GL/glut.h>
+#include<math.h>
+#include </home/pruthvi/project/CG/new.h>
+FILE *fp;
+int numseg=0;
+void * font = GLUT_BITMAP_9_BY_15;
+static int addingmenu;
+static int menuid;
+static int animationmenu;
+static int mouse_val = 0;
+static int win=0,win_no=0,zx=0,window_no=0,tresx[10],tresy[10],xnew,ynew,sx=2,sy=2;
+void createMenu(void);
+
+void Init()
+ {
+   glMatrixMode(GL_PROJECTION);
+   glLoadIdentity();
+   gluOrtho2D(0,4000,0,4000);
+ }
+
+struct segment{
+	 int id;
+	 int tx;
+	 int ty;
+	 int sx;
+	 int sy;
+	 int theta;
+	 int start_add;
+	 int end_add;
+	 int visi;
+	struct segment * next;
+};
+
+typedef struct segment node;
+node *head=NULL;
+
+void create_segment()
+{
+	int temp,opcode,line,x,y,vis;
+	node *p;
+	
+	fp = fopen("disp2.txt","r");
+
+	while(!feof(fp))
+	{
+		if(numseg==0)
+		{
+			head=(node*)malloc(sizeof(node));
+			p=head;
+			numseg++;
+		}
+		fscanf(fp,"%d %d %d %d %d",&line,&opcode,&x,&y,&vis);
+		if(opcode==0)
+		{
+			if(numseg!=1)
+			{
+				p->end_add=line;
+				printf("%d %d\n",p->start_add,p->end_add);
+			}
+			p->next=(node*)malloc(sizeof(node));
+			p=p->next;
+			p->id=numseg;
+			p->start_add=line;
+			p->visi=vis;
+			p->tx=0;
+			p->ty=0;
+			p->sx=0;
+			p->sy=0;
+			p->theta=0;
+			p->next=NULL;
+			numseg++;
+		}
+	}
+	p->end_add=line;
+	p->next=NULL;
+	fclose(fp);
+}	
+
+void trans(int x,int y)
+{
+ int a[3][3],b[3][1],ans[3][1];
+ int qa,j,k;
+ for(qa=0;qa<3;qa++)
+ {
+  for(j=0;j<3;j++)
+  {  
+   if(qa==j)
+    a[qa][j]=1;
+   else
+    a[qa][j]=0;
+  }
+ }
+ a[0][2]=600;
+ a[1][2]=600;
+ b[0][0]=x;
+ b[1][0]=y;
+ b[2][0]=1;
+ for(qa=0;qa<3;qa++)
+ {
+  for(j=0;j<3;j++)
+  { 
+   ans[qa][j]=0;
+   for(k=0;k<3;k++)
+    ans[qa][j]+=a[qa][k]*b[k][j];
+  }
+ }
+ xnew=ans[0][0];
+ ynew=ans[1][0];
+}
+
+void scale(int x,int y)
+{
+ int a[3][3],b[3][1],ans[3][1];
+ int wi,j,k;
+ for(wi=0;wi<3;wi++)
+ {
+  for(j=0;j<3;j++)
+  {  
+   if(wi==j && wi==0)
+    a[wi][j]=sx;
+   else if(wi==j && wi==1)
+    a[wi][j]=sy;
+   else
+    a[wi][j]=0;
+  }
+ }
+ a[2][2]=1;
+ b[0][0]=x;
+ b[1][0]=y;
+ b[2][0]=1;
+ for(wi=0;wi<3;wi++)
+ {
+  for(j=0;j<3;j++)
+  { 
+   ans[wi][j]=0;
+   for(k=0;k<3;k++)
+    ans[wi][j]+=a[wi][k]*b[k][j];
+  }
+ }
+ xnew=ans[0][0];
+ ynew=ans[1][0];
+}
+
+
+void translate(int transx,int transy){
+SetPixel(transx,transy);
+}
+
+void circle(int rd,int ch)
+{
+}
+void show()
+{
+	int n1=1,line,opcode,last_op,x,y,x1,y1,vis;
+	node *p;
+	p=head;
+	fp = fopen("disp1.txt","r");
+	while(!feof(fp))
+	{
+	fscanf(fp,"%d %d %d %d %d",&line,&opcode,&x,&y,&vis);
+	switch(opcode)
+	{
+		case 0: translate(x,y);
+		        x1=x;y1=y;
+		        break;
+		case 1: dda(x1,y1,x,y);
+			x1=x;y1=y;
+			break;
+		case 2: circle(x,y);
+			break;
+		case 3: SetPixel(x,y);
+			break;
+	}
+	}
+	fclose(fp);
+}
+
+void show1()
+{
+	int n1=1,line,opcode,last_op,x,y,x1,y1,vis;
+	node *p;
+	p=head;
+			fp = fopen("disp2.txt","r");
+			while(!feof(fp))
+			{
+				fscanf(fp,"%d %d %d %d %d",&line,&opcode,&x,&y,&vis);
+				switch(opcode)
+				{
+					case 0: translate(x,y);
+						x1=x;y1=y;
+					        break;
+					case 1: dda(x1,y1,x,y);
+						x1=x;y1=y;
+						break;
+					case 2: circle(x,y);
+						break;
+					case 3: SetPixel(x,y);
+						break;
+				}
+			}
+			fclose(fp);
+}
+
+
+void change_1()
+{
+	int line,vis,opcode,x,y,x1,y1;
+	int a=0,c=0;
+	fp = fopen("disp2.txt","r+");
+			while(c!=4)
+			{
+				fscanf(fp,"%d %d ",&line,&opcode);
+				x=tresx[a];
+				y=tresy[a];
+				fprintf(fp,"%d %d",tresx[a],tresy[a]);
+				fscanf(fp,"%d",&vis);
+				printf("%d %d %d %d %d\n",line,opcode,tresx[a],tresy[a],vis);
+				a++;
+				if(a==3)
+				a=0;
+				switch(opcode)
+				{
+					case 0: translate(x,y);
+						x1=x;y1=y;
+					        break;
+					case 1: dda(x1,y1,x,y);
+						x1=x;y1=y;
+						break;
+					case 2: circle(x,y);
+						break;
+					case 3: SetPixel(x,y);
+						break;
+				}
+			c++;
+			}
+			fclose(fp);
+}
+void menu2(int value2){
+	if(value2 == 12)
+	{
+		glutDestroyWindow(win);
+	}
+	else if (value2 == 11)
+	{
+		glClear(GL_COLOR_BUFFER_BIT);
+		glBegin(GL_POINTS);
+		display2();		
+		glEnd();
+		glFlush();
+		window_no=3;
+	}
+}
+void createMenu2(void){
+	menuid = glutCreateMenu(menu2);
+	glutAddMenuEntry("START GAME",11);
+	glutAddMenuEntry("QUIT", 12); 
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+}
+
+void call1()
+{
+    renderBitmapString(1600,3500,(void *)font1,"WELCOME :)");
+}
+
+void call2()
+{
+    renderBitmapString(500,3500,(void *)font,"Welcome to the game! :)");
+    renderBitmapString(500,3000,(void *)font,"Instructions:");
+    renderBitmapString(600,2500,(void *)font,"-The goal of this game is to eat the food which is displayed on the screen at random points and make the snake grow longer.");
+    renderBitmapString(600,2000,(void *)font,"-Use the arrow keys to move the snake left,right,up and down.");
+    renderBitmapString(600,1500,(void *)font,"-The game will be over once the snake hits the boundary.");
+    renderBitmapString(2000,1000,(void *)font,"All the best!!");
+	createMenu2();	
+}
+
+void rot(int x,int y)
+{
+}
+
+void show3()
+{
+	int n1=1,line,opcode,last_op,x,y,x1,y1,vis,u,o,arx[10],ary[10];
+	node *p;
+	p=head;
+	while(p!=NULL)
+	{
+			p=p->next;
+			fp = fopen("disp2.txt","r");
+			while(n1!=p->start_add)
+			{
+				fscanf(fp,"%d %d %d %d %d",&line,&opcode,&x,&y,&vis);
+				last_op=opcode;
+                                n1++;
+			}
+			o=0;
+			while(n1!=p->end_add)
+			{
+				fscanf(fp,"%d %d %d %d %d",&line,&opcode,&x,&y,&vis);
+				arx[o]=x;
+				ary[o++]=y;
+				n1++;
+			}
+			fscanf(fp,"%d %d %d %d %d",&line,&opcode,&x,&y,&vis);
+			arx[o]=x;
+			ary[o++]=y;
+			fclose(fp);
+			p=p->next;
+	}
+	u=0;
+	switch(mouse_val)
+	{
+		case 1:
+			while(u<=3)
+			{	printf("translate\n");
+				trans(arx[u],ary[u]);
+				tresx[u]=xnew;
+				tresy[u]=ynew;
+				u++;
+			}
+			break;
+		case 2:
+			while(u<=3)
+			{	printf("rotate\n");
+				rot(arx[u],ary[u]);
+				tresx[u]=xnew;
+				tresy[u]=ynew;
+				u++;
+			}
+			break;
+		case 3:
+			while(u<=3)
+			{	printf("scale\n");
+				scale(arx[u],ary[u]);
+				tresx[u]=xnew;
+				tresy[u]=ynew;
+				u++;
+			}
+			break;
+	}
+}
+
+void change_tra()
+{
+	node *p=head;
+	while(p!=NULL)
+	{
+		p->tx=600;
+		p->ty=600;
+		p=p->next;
+	}
+}
+
+void change_sca()
+{
+	node *p=head;
+	while(p!=NULL)
+	{
+		p->sx=2;
+		p->sy=2;
+		p=p->next;
+	}
+}
+
+
+
+void menu1(int value){
+	if(value == 10)
+	{
+		glutDestroyWindow(win);
+	}
+	else
+	{
+		mouse_val=value;
+	}
+	if(mouse_val == 1)
+	{
+		glClear(GL_COLOR_BUFFER_BIT);
+		change_tra();
+		show();
+		call1();
+		show3();
+		change_1();
+		zx++;
+	}
+	else if(mouse_val == 2)
+	{
+
+	}		
+	else if(mouse_val == 3)
+	{
+		glClear(GL_COLOR_BUFFER_BIT);
+		change_sca();
+		show();
+		call1();
+		show3();
+		change_1();
+		zx++;
+	}
+	else if(mouse_val == 4)
+	{
+		
+	}
+	else if(mouse_val == 5)
+	{
+		int x,y,vis,opcode,line;
+			fp = fopen("disp2.txt","r+");
+			line =1;
+			while(line !=5)
+			{
+			fscanf(fp,"%d %d %d %d",&line,&opcode,&x,&y);
+			fprintf(fp," %d\n",1);
+			line++;
+			}
+		zx++;
+	fclose(fp);
+	show1();
+	}
+	else if(mouse_val == 6)
+	{
+		
+	}
+	else if(mouse_val == 7)
+	{
+	win_no++;
+	glClear(GL_COLOR_BUFFER_BIT);
+	call2();
+	}
+}
+
+void createMenu1(void){
+	animationmenu = glutCreateMenu(menu1);        
+	glutAddMenuEntry("Translation", 1);
+	glutAddMenuEntry("Rotation", 2);
+	glutAddMenuEntry("Scaling", 3);
+	glutAddMenuEntry("Rubber band", 4);
+
+	menuid = glutCreateMenu(menu1);
+	glutAddMenuEntry("Add shapes",5);
+	glutAddSubMenu("Transformations", animationmenu);
+	glutAddMenuEntry("Clipping",6);
+        glutAddMenuEntry("continue", 7); 
+	glutAddMenuEntry("quit", 10); 
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+}
+
+
+void display()
+{
+	if(win_no==0)
+	{	
+		glClear(GL_COLOR_BUFFER_BIT);
+		glBegin(GL_POINTS);
+		show();
+		createMenu1();
+		if(zx!=0)
+		show1();
+		call1();
+	}
+	else if (window_no==3)
+	{
+		glClear(GL_COLOR_BUFFER_BIT);
+		glBegin(GL_POINTS);
+		display2();
+		if((xa>=inx+50) ||(xa<=iny-50)||(ya>=inx) ||(ya<=iny))
+  		{
+		call3();
+		glutSwapBuffers();	
+		}		
+		glEnd();
+		glFlush();
+	}
+	else
+	{
+		createMenu2();
+		call2();
+	}
+	glEnd();
+       	glFlush();	
+}
+
+int main(int argc,char **argv)
+{
+ glutInit(&argc,argv);
+ glutInitDisplayMode(GLUT_RGB );
+ win=glutCreateWindow("welcome window");
+ Init();
+ create_segment();
+ glutDisplayFunc(display);
+ glutMainLoop();
+}
